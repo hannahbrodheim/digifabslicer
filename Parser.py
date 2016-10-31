@@ -57,6 +57,11 @@ def parse(filename, zDiff):
 	next = f.readline()
 	facets = []
 	maxz = -99
+	minz = 99
+	maxy = -99
+	miny = 99
+	maxx = -99
+	minx = 99
 	while (not next[:8] == "endsolid"):
 		normal = next[15:-1].split(" ")
 		f.readline() # outer loop
@@ -64,8 +69,14 @@ def parse(filename, zDiff):
 		v2 = f.readline()[13:-1].split(" ")
 		v3 = f.readline()[13:-1].split(" ")
 		maxz = max(maxz, float(v1[2]), float(v2[2]), float(v3[2]))
+		maxy = max(maxy, float(v1[1]), float(v2[1]), float(v3[1]))
+		maxx = max(maxx, float(v1[0]), float(v2[0]), float(v3[0]))
+		minz = min(minz, float(v1[2]), float(v2[2]), float(v3[2]))
+		miny = min(miny, float(v1[1]), float(v2[1]), float(v3[1]))
+		minx = min(minx, float(v1[0]), float(v2[0]), float(v3[0]))
+
 		facets.append(Facet(Point(float(normal[0]), float(normal[1]), float(normal[2])), Point(float(v1[0]), float(v1[1]), float(v1[2])), Point(float(v2[0]), float(v2[1]), float(v2[2])), Point(float(v3[0]), float(v3[1]), float(v3[2]))))
 		f.readline() # endloop
 		f.readline() # end facet
 		next = f.readline() # facet
-	return facets, maxz
+	return facets, minx, maxx, miny, maxy, minz, maxz
