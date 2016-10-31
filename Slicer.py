@@ -45,6 +45,17 @@ def intersections(coord, layerdata, flip):
             points.add((((coord-x2)*y2) + ((x1-coord)*y1))/(x2-x1))
     return makePairs(points.sort())
 
+def findXYMax(facetdata):
+    #Assuming all STL coords are positive, as per STL spec
+    xmax = 0
+    ymax = 0
+    for layerdata in facetdata:
+        for ((x1, y1), (x2, y2)) in layerdata:
+            xmax = max(x1, x2, xmax)
+            ymax = max(y1, y2, ymax)
+    return (xmax, ymax)
+
+
 def makePairs(points):
     if points==[]:
         return []
@@ -124,9 +135,7 @@ def getSupportAndFillIntervals(x, layerData, layerdataBelow, layerdataAbove, acc
     fill = supportAndFill[1::2]
     return (surfaceLines, support, fill, intervalSetUnion(accumulatedAbove + surfaceLines))
 
-def processLayer(z, facetdata, accDataX, accDataY, zdelta, zmax, xdelta, ydelta, supportSpacing, fillSpacing):
-    xmax = findXMax(facetdata[z])
-    ymax = findYMax(facetdata[z])
+def processLayer(z, facetdata, accDataX, accDataY, zdelta, zmax, xdelta, ydelta, supportSpacing, fillSpacing, xmax, ymax):
     layerData = facetdata[z]
     layerDataAbove = facetdata[z+zdelta]
     layerDataBelow = facetdata[z-zdelta]
@@ -150,8 +159,9 @@ def processAll(xdelta, ydelta, supportSpacing, fillSpacing):
     facetData = generateFacetData(zdelta)
     accIntervalsX = {}
     accIntervalsY = {}
+    (xmax, ymax) = findXYMax(facetData)
     for z in range(ceil(zmax/zdelta), 0):
         z = z * zdelta
-        (accIntervalsX2, accIntervalsY2) = processLayer(z, facetData, accIntervalsX, accIntervalsY, zdelta, zmax, xdelta, ydelta, supportSpacing, fillSpacing)
+        (accIntervalsX2, accIntervalsY2) = processLayer(z, facetData, accIntervalsX, accIntervalsY, zdelta, zmax, xdelta, ydelta, supportSpacing, fillSpacing, xmax, ymax)
         accIntervalsX = accIntervalsX2
         accIntervalsY = accIntervalsY2
