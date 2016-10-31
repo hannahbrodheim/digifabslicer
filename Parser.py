@@ -63,7 +63,7 @@ def parse(filename, zDiff):
 		v1 = f.readline()[13:-1].split(" ")
 		v2 = f.readline()[13:-1].split(" ")
 		v3 = f.readline()[13:-1].split(" ")
-		maxz = max(maxz, v1[2], v2[2], v3[2])
+		maxz = max(maxz, float(v1[2]), float(v2[2]), float(v3[2]))
 		facets.append(Facet(Point(float(normal[0]), float(normal[1]), float(normal[2])), Point(float(v1[0]), float(v1[1]), float(v1[2])), Point(float(v2[0]), float(v2[1]), float(v2[2])), Point(float(v3[0]), float(v3[1]), float(v3[2]))))
 		f.readline() # endloop
 		f.readline() # end facet
