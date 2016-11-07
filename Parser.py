@@ -34,43 +34,61 @@ class Facet:
         planeNormal = Point(0,0,1)
         planePoint = Point(0,0,z)
         points = []
+        extraPoints = []
+        flag = False
+        flag2 = False
+        flag3 = False
         if ((max(self.v1.z, self.v2.z, self.v3.z) < z) or (min(self.v1.z, self.v2.z, self.v3.z) > z)):
             return None
 
         if (((self.v1.z <= z) and (self.v2.z >= z)) or ((self.v1.z >= z) and (self.v2.z <= z))):
             try:
                 result = (self.calculate(planeNormal, planePoint, self.v1, self.v2))
-                points.append ((((abs(self.v1.x - self.v2.x) * result) + min(self.v1.x, self.v2.x)), (abs(self.v1.y - self.v2.y) * result + min(self.v1.y, self.v2.y))))
+                points.append (((((self.v1.x - self.v2.x) * result) + self.v2.x), ((self.v1.y - self.v2.y) * result + self.v2.y)))
             except ZeroDivisionError:
-                if (self.v1.z==z): 
-                    points.append((self.v1.x, self.v1.y))
-                    points.append((self.v2.x, self.v2.y))
+                if (self.v1.z==z):
+                    flag = True
+                    extraPoints.append((self.v1.x, self.v1.y))
+                    extraPoints.append((self.v2.x, self.v2.y))
         if (((self.v3.z <= z) and (self.v2.z >= z)) or ((self.v3.z >= z) and (self.v2.z <= z))):
             try:
                 result = (self.calculate(planeNormal, planePoint, self.v3, self.v2))
-                points.append ((((abs(self.v3.x - self.v2.x) * result) + min(self.v3.x, self.v2.x)), (abs(self.v3.y - self.v2.y) * result + min(self.v3.y, self.v2.y))))
+                points.append (((((self.v3.x - self.v2.x) * result) + self.v2.x), ((self.v3.y - self.v2.y) * result + self.v2.y)))
             except ZeroDivisionError:
                 if (self.v2.z==z):
-                    points.append((self.v2.x, self.v2.y))
-                    points.append((self.v3.x, self.v3.y))
+                    flag2 = True
+                    extraPoints.append((self.v2.x, self.v2.y))
+                    extraPoints.append((self.v3.x, self.v3.y))
         if (((self.v1.z <= z) and (self.v3.z >= z)) or ((self.v1.z >= z) and (self.v3.z <= z))):
             try:
                 result = (self.calculate(planeNormal, planePoint, self.v1, self.v3))
-                points.append ((((abs(self.v1.x - self.v3.x) * result) + min(self.v1.x, self.v3.x)), (abs(self.v1.y - self.v3.y) * result + min(self.v1.y, self.v3.y))))
+                points.append (((((self.v1.x - self.v3.x) * result) +self.v3.x), ((self.v1.y - self.v3.y) * result + self.v3.y)))
             except ZeroDivisionError:
                 if (self.v3.z==z):
-                    points.append((self.v1.x, self.v1.y))
-                    points.append((self.v3.x, self.v3.y))
+                    flag3 = True
+                    extraPoints.append((self.v1.x, self.v1.y))
+                    extraPoints.append((self.v3.x, self.v3.y))
         #if (len(points) > 2):
         #    return None
         #if (points[0] == points[1]):
         #    return None
-        if (len(points) == 4):
-            points = list(set(points))
-        if (len(points)==6):
+        if (len(extraPoints) == 2):
+            return extraPoints
+        if (len(extraPoints) >2):
             return None
+        #if (len(points) == 4 or len(points)==3):
+        #    points = list(set(points))
+        #if (len(points)==6):
+        #    return None
         if (points[0]==points[1]):
             return None
+        if (len(points) == 3):
+            print points
+            print "ewww"
+        if flag or flag2 or flag3:
+            print flag
+            print flag2
+            print flag3
         return points
 
     def __str__ (self):
