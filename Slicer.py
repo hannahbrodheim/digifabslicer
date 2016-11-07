@@ -213,7 +213,7 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
     xFirstPass = {}
     yFirstPass = {}
     xOutput = {}
-    gcode = GCode.GCodeWriter("foo.gcode", zdelta)
+    gcode = GCode.GCodeWriter("foo"+testfile+".gcode", zdelta)
     for x in range(int(math.floor(xmin/xdelta)),int(math.ceil(xmax/xdelta))+1):
         accIntervalsX[x] = []
     for y in range(int(math.floor(ymin/ydelta)),int(math.ceil(ymax/ydelta))+1):
@@ -227,9 +227,12 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
         xFirstPass[z] = xFirstPassTemp
         yFirstPass[z] = yFirstPassTemp
     zrange.reverse()
+    for line in facetData[0]:
+        gcode.writeLayer(line[0], line[1])
+        print line
     for z in zrange:
-        for line in facetData[z]:
-            gcode.writeLayer(line[0], line[1])
+        #for line in facetData[z]:
+        #    gcode.writeLayer(line[0], line[1])
         print ("z="+str(z))
         for y in range(int(math.floor(ymin/ydelta)),int(math.ceil(ymax/ydelta))+1):
             above = ([], [], [])
@@ -243,12 +246,12 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
             newFill = intervalSetDiff(cur[2], newSurface)
             newSupport = intervalSetDiff(cur[1], newSurface)
             xOutput = (newSurface, newSupport, newFill)
-            if ((y % fillSpacing) == 0):
-                for fill in newFill:
-                    gcode.writeLayer((fill[0], y*ydelta), (fill[1], y*ydelta))
-            if (z % 2 == 0):
-                for surf in newSurface:
-                    gcode.writeLayer((surf[0], y*ydelta), (surf[1], y*ydelta))
+            #if ((y % fillSpacing) == 0):
+            #    for fill in newFill:
+            #        gcode.writeLayer((fill[0], y*ydelta), (fill[1], y*ydelta))
+            #if (z % 2 == 0):
+            #    for surf in newSurface:
+            #        gcode.writeLayer((surf[0], y*ydelta), (surf[1], y*ydelta))
 
         for x in range(int(math.floor(xmin/xdelta)),int(math.ceil(xmax/xdelta))+1):
             #print ("x="+str(x))
@@ -263,23 +266,26 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
             newFill = intervalSetDiff(cur[2], newSurface)
             newSupport = intervalSetDiff(cur[1], newSurface)
             xOutput = (newSurface, newSupport, newFill)
-            if ((x % fillSpacing) == 0):
-                for fill in newFill:
-                    gcode.writeLayer((x*xdelta,fill[0]), (x*xdelta,fill[1]))
+            #if ((x % fillSpacing) == 0):
+            #    for fill in newFill:
+            #        gcode.writeLayer((x*xdelta,fill[0]), (x*xdelta,fill[1]))
                     #print(str(fill))
-            if ((x % supportSpacing) == 0):
-                for support in newSupport:
-                    gcode.writeLayer((x*xdelta,support[0]), (x*zdelta,support[1]))
-            if ((z % 2) == 1):
-                for surf in newSurface:
-                    gcode.writeLayer((x*xdelta,surf[0]), (x*xdelta,surf[1]))
-        gcode.incrementLayer()
-        for line in facetData[z]:
-            gcode.writeLayer(line[0], line[1])
+            #if ((x % supportSpacing) == 0):
+            #   for support in newSupport:
+            #       gcode.writeLayer((x*xdelta,support[0]), (x*zdelta,support[1]))
+            #if ((z % 2) == 1):
+            #    for surf in newSurface:
+            #        gcode.writeLayer((x*xdelta,surf[0]), (x*xdelta,surf[1]))
+        #gcode.incrementLayer()
+        #for line in facetData[z]:
+        #    gcode.writeLayer(line[0], line[1])
 
     gcode.done()
 
 
 
-
-processAll(0.1, 0.1, 0.1, "testData/sphere.stl", 10, 10)
+#testfile = "Cylinder"
+#testfile = "sphere"
+testfile = "testcube_20mm"
+#testfile = "Lab3-M"
+processAll(1, 1, 1, "testData/"+testfile+".stl", 10, 10)
