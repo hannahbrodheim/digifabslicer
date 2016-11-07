@@ -14,19 +14,43 @@ def generateSliceData(zdelta, filename):
 
     facetdata = {}
     for z in range(int(math.floor(zmin/zdelta)), int(math.ceil(zmax/zdelta))+1):
-       # triangles = []
         lines = []
         for facet in facets:
-        #    if facet.isExactlyFlat(zdelta):
-        #        triangles.add(facet)
-       #     else:
+            # We can safely ignore triangles in the plane, since the closure of a region of
+            # triangles entirely in the plane is bounded by edges of triangles not in the plane,
+            # and we can just work with those edges instead.
             intersection = facet.getIntersectionLine(z*zdelta)
             if intersection is not None:
                 lines.append(intersection)
-        facetdata[z] = lines
-        #print "z="+ str(z)
-        #print(facetdata[z])
+        facetdata[z] = mergeColinearLines(lines)
     return (facetdata, xmin, xmax, ymin, ymax, zmin, zmax)
+
+def getAngle(line):
+    (x,y) = line[0]
+    (x1,y1) = line[1]
+    return math.atan2(y1-y, x1-x) % math.pi
+
+def mergeColinearLines(lines):
+    if lines == []:
+        return []
+    line = lines[0]
+    otherlines = lines[1:]
+    theta = getAngle(line)
+    for oline in otherlines:
+        if (getAngle(oline) == theta):
+            if line[0]==oline[0]:
+                otherlines.remove(oline)
+                return mergeColinearLines([(line[1], oline[1])] + otherlines)
+            if line[0]==oline[1]:
+                otherlines.remove(oline)
+                return mergeColinearLines([(line[1], oline[0])] + otherlines)
+            if line[1]==oline[0]:
+                otherlines.remove(oline)
+                return mergeColinearLines([(line[0], oline[1])] + otherlines)
+            if line[1]==oline[1]:
+                otherlines.remove(oline)
+                return mergeColinearLines([(line[0], oline[0])] + otherlines)
+    return [line] + mergeColinearLines(otherlines)
 
 def intersections(coord, layerdata, flip):
     points = []
@@ -52,17 +76,17 @@ def intersections(coord, layerdata, flip):
             if x2==x1:
                 continue
             points.append((((coord-x2)*y2) + ((x1-coord)*y1))/(x1-x2))
-    return points
+    return list(set(points))
 
 def makePairs(points):
     if points==[]:
         return []
     if (len(points) == 1):
-        #print "WTF"
         return [(points[0], points[0])]
     otherOutput = makePairs(points[2:])
     otherOutput.insert(0, (points[0], points[1]))
     return otherOutput
+
 
 def getXLineSurfaceDiffs(coord, layerdata1, layerdata2, flip):
     #IGNORE TRIANGLES WOOOOOOOOT
@@ -136,24 +160,19 @@ def intervalSetDiff(baseIntervals, subtracting):
         nextIterIntervals = []
         for b in base:
             diffResult = intervalDiff(b, sub)
-          #  #print(base)
-           # #print(str(b)+ " - " + str(sub)+" = "+str(diffResult))
             nextIterIntervals = nextIterIntervals + diffResult
         base = nextIterIntervals
     return base
+
 def wrapIntersections(x, layerdata, flip):
     if (layerdata is None):
         return []
     results = intersections(x, layerdata, flip)
     results.sort()
     return makePairs (results)
-    #return intersections(x, layerdata, flip)
 
 def getSupportAndFillIntervals(x, xmin, xmax, layerData, layerdataBelow, layerdataAbove, accumulatedAbove, flip):
-    #diff1 = getXLineSurfaceDiffs(x, layerData, layerdataBelow, flip)
-    #diff2 = getXLineSurfaceDiffs(x, layerData, layerdataAbove, flip)
     maxInterval = [(xmin-1, xmax+1)]
-
     topInsides = wrapIntersections(x, layerdataAbove, flip)
     midInsides = wrapIntersections(x, layerData, flip)
     botInsides = wrapIntersections(x, layerdataBelow, flip)
@@ -221,7 +240,6 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
     #print (xmin, xmax, ymin, ymax, zmin, zmax)
     zrange = (range(int((math.floor(zmin/zdelta))), int(math.ceil(zmax/zdelta))+1))
     zrange.reverse()
-    #print(zrange)
     for z in zrange:
         (xFirstPassTemp, yFirstPassTemp) = processLayer(z, facetData, accIntervalsX, accIntervalsY, zdelta, xdelta, ydelta, supportSpacing, fillSpacing, xmin, xmax, ymin, ymax, zmin, zmax)
         xFirstPass[z] = xFirstPassTemp
@@ -242,6 +260,7 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
             below = ([], [], [])
             if (z*zdelta -zdelta >= zmin):
                 below = yFirstPass[z-1][y]
+           # print (str(above[0])+" "+str(cur[0]) + " " +str(below[0]))
             newSurface = intervalSetUnion(above[0] + cur[0] + below[0])
             newFill = intervalSetDiff(cur[2], newSurface)
             newSupport = intervalSetDiff(cur[1], newSurface)
@@ -252,9 +271,15 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
             #if (z % 2 == 0):
             #    for surf in newSurface:
             #        gcode.writeLayer((surf[0], y*ydelta), (surf[1], y*ydelta))
+            if ((y % fillSpacing) == 0):
+                pass
+                #for fill in newFill:
+               #     gcode.writeLayer((fill[0], y*ydelta), (fill[1], y*ydelta))
+            if (z % 2 == 0):
+                for surf in newSurface:
+                    gcode.writeLayer((surf[0], y*ydelta), (surf[1], y*ydelta))
 
         for x in range(int(math.floor(xmin/xdelta)),int(math.ceil(xmax/xdelta))+1):
-            #print ("x="+str(x))
             above = ([], [], [])
             if (z*zdelta + zdelta <=zmax):
                 above = xFirstPass[z+1][x]
@@ -279,6 +304,23 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
         #gcode.incrementLayer()
         #for line in facetData[z]:
         #    gcode.writeLayer(line[0], line[1])
+            if ((x % fillSpacing) == 0):
+                pass
+           #     for fill in newFill:
+            #        gcode.writeLayer((x*xdelta,fill[0]), (x*xdelta,fill[1]))
+                for fill in newFill:
+                    gcode.writeLayer((x*xdelta,fill[0]), (x*xdelta,fill[1]))
+                    #print(str(fill))
+            if ((x % supportSpacing) == 0):
+                pass
+                #for support in newSupport:
+                #    gcode.writeLayer((x*xdelta,support[0]), (x*zdelta,support[1]))
+            if ((z % 2) == 1):
+                for surf in newSurface:
+                    gcode.writeLayer((x*xdelta,surf[0]), (x*xdelta,surf[1]))
+        gcode.incrementLayer()
+        for line in facetData[z]:
+            gcode.writeLayer(line[0], line[1])
 
     gcode.done()
 
@@ -289,3 +331,4 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
 testfile = "testcube_20mm"
 #testfile = "Lab3-M"
 processAll(1, 1, 1, "testData/"+testfile+".stl", 10, 10)
+
