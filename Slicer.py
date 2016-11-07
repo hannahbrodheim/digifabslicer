@@ -57,6 +57,9 @@ def intersections(coord, layerdata, flip):
 def makePairs(points):
     if points==[]:
         return []
+    if (len(points) == 1):
+        print "WTF"
+        return [(points[0], points[0])]
     otherOutput = makePairs(points[2:])
     otherOutput.insert(0, (points[0], points[1]))
     return otherOutput
@@ -186,29 +189,28 @@ def processLayer(z, facetdata, accDataX, accDataY, zdelta, xdelta, ydelta, suppo
     if (z*zdelta-zdelta >=zmin):
         layerDataBelow = facetdata[z-1]
     print ("processing layer z=" + str(z))
-    print "layerData = " + str(layerData)
+    #print "layerData = " + str(layerData)
     print len(layerData)
     xFirstPass = {}
+    yFirstPass = {}
     for x in range(int(math.floor(xmin/xdelta)),int(math.ceil(xmax/xdelta))+1):
         print "x=" + str(x)
         (surfaceLines, support, fill, newAccData) = getSupportAndFillIntervals(x*xdelta, xmin, xmax, layerData, layerDataBelow, layerDataAbove, accDataX[x], False)
-        #TODO output gcode
         print "done x"
         accDataX[x] = newAccData
         xFirstPass[x] = (surfaceLines, support, fill)
-        print ("x=" + str(x) + " surfaceLines=" + str(surfaceLines) + " support = " + str(support) + " fill = " + str(fill))
-    #for y in range(int(math.floor(ymin/ydelta)),int(math.ceil(ymax/ydelta))+1):
-    #    y = y * ydelta
-    #    (surfaceLines, support, fill, newAccData) = getSupportAndFillIntervals(y, layerData, layerDataBelow, layerDataAbove, accDataY[y], True)
-    #    #TODO output gcode
-    #    accDataY[y] = newAccData
-    return (xFirstPass)
+    for y in range(int(math.floor(ymin/ydelta)),int(math.ceil(ymax/ydelta))+1):
+        (surfaceLines, support, fill, newAccData) = getSupportAndFillIntervals(y*ydelta, ymin, ymax, layerData, layerDataBelow, layerDataAbove, accDataY[y], True)
+        accDataY[y] = newAccData
+        yFirstPass[y] = (surfaceLines, support, fill)
+    return (xFirstPass, yFirstPass)
 
 def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
     (facetData, xmin, xmax, ymin, ymax, zmin, zmax) = generateSliceData(zdelta, filename)
     accIntervalsX = {}
     accIntervalsY = {}
     xFirstPass = {}
+    yFirstPass = {}
     xOutput = {}
     gcode = GCode.GCodeWriter("foo.gcode", zdelta)
     for x in range(int(math.floor(xmin/xdelta)),int(math.ceil(xmax/xdelta))+1):
@@ -221,9 +223,11 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
     print(zrange)
     for z in zrange:
         print("z=" + str(z))
-        xFirstPassTemp = processLayer(z, facetData, accIntervalsX, accIntervalsY, zdelta, xdelta, ydelta, supportSpacing, fillSpacing, xmin, xmax, ymin, ymax, zmin, zmax)
+        (xFirstPassTemp, yFirstPassTemp) = processLayer(z, facetData, accIntervalsX, accIntervalsY, zdelta, xdelta, ydelta, supportSpacing, fillSpacing, xmin, xmax, ymin, ymax, zmin, zmax)
         xFirstPass[z] = xFirstPassTemp
+        yFirstPass[z] = yFirstPassTemp
     print "second pass"
+    zrange.reverse()
     for z in zrange:
         print ("z="+str(z))
         for x in range(int(math.floor(xmin/xdelta)),int(math.ceil(xmax/xdelta))+1):
@@ -242,10 +246,14 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
             print ("surface = " + str(newSurface))
             print ("fill = " + str(newFill))
             print ("support = " + str(newSupport))
-            if (x % fillSpacing == 0):
+            print (x)
+            print (fillSpacing)
+            print(x % fillSpacing)
+            if ((x % fillSpacing) == 0):
                 for fill in newFill:
                     gcode.writeLayer((x*xdelta,fill[0]), (x*xdelta,fill[1]))
-            if (x % supportSpacing == 0):
+                    print(str(fill))
+            if ((x % supportSpacing) == 0):
                 for support in newSupport:
                     gcode.writeLayer((x*xdelta,support[0]), (x*zdelta,support[1]))
             for surf in newSurface:
@@ -257,4 +265,4 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
 
 
 
-processAll(0.1, 0.1, 0.1, "testData/testcube_20mm.stl", 4, 2)
+processAll(0.1, 0.1, 0.1, "testData/sphere.stl", 10, 10)
