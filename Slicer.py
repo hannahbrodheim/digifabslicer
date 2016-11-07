@@ -6,6 +6,7 @@
 
 import Parser
 import math
+import GCode
 
 
 def generateSliceData(zdelta, filename):
@@ -67,12 +68,16 @@ def getXLineSurfaceDiffs(coord, layerdata1, layerdata2, flip):
         return makePairs(intersections(coord, layerdata1, flip))
     above = intersections(coord, layerdata1, flip)
     below = intersections(coord, layerdata2, flip)
-    print "above="+str(above)
-    print "below="+str(below)
+    #above.sort()
+    #below.sort()
+    #abovePairs = intersections(coord, layerdata1, flip)
+    #belowPairs = intersections(coord, layerdata2, flip)
+   # print "above="+str(above)
+   # print "below="+str(below)
     totalPoints = above + below
     totalPoints.sort()
     total = intervalSetUnion(makePairs(totalPoints))
-    print "total= "+ str(total)
+   # print "total= "+ str(total)
     return total
 
 def intervalIntersect(interval1, interval2):
@@ -116,10 +121,8 @@ def intervalDiff(base, subtracting):
         if (subtracting[1] >= base[1]) and (subtracting[0] <= base[0]):
             return []
         if (subtracting[1] >= base[1]) and (subtracting[0] > base[0]):
-            print "foo"
             return [(base[0], subtracting[0])]
         if (subtracting[1] < base[1]) and (subtracting[0] <= base[0]):
-            print "bar"
             return [(subtracting[1], base[1])]
         return [(base[0], subtracting[0]), (subtracting[1], base[1])]
     return [base]
@@ -130,27 +133,48 @@ def intervalSetDiff(baseIntervals, subtracting):
         nextIterIntervals = []
         for b in base:
             diffResult = intervalDiff(b, sub)
-            print(base)
-            print(str(b)+ " - " + str(sub)+" = "+str(diffResult))
+          #  print(base)
+           # print(str(b)+ " - " + str(sub)+" = "+str(diffResult))
             nextIterIntervals = nextIterIntervals + diffResult
         base = nextIterIntervals
     return base
+def wrapIntersections(x, layerdata, flip):
+    if (layerdata is None):
+        return []
+    results = intersections(x, layerdata, flip)
+    results.sort()
+    return makePairs (results)
+    #return intersections(x, layerdata, flip)
 
 def getSupportAndFillIntervals(x, xmin, xmax, layerData, layerdataBelow, layerdataAbove, accumulatedAbove, flip):
-    diff1 = getXLineSurfaceDiffs(x, layerData, layerdataBelow, flip)
-    diff2 = getXLineSurfaceDiffs(x, layerData, layerdataAbove, flip)
-    surfaceLines = intervalSetUnion(diff1 + diff2)
-    print ("surfaceLines="+str(surfaceLines))
-    print ("accAbove="+str(accumulatedAbove))
+    #diff1 = getXLineSurfaceDiffs(x, layerData, layerdataBelow, flip)
+    #diff2 = getXLineSurfaceDiffs(x, layerData, layerdataAbove, flip)
     maxInterval = [(xmin-1, xmax+1)]
-    supportAndFill = intervalSetDiff(maxInterval, surfaceLines)
-    print ("unsorted="+str(supportAndFill))
-    supportAndFill.sort(cmp=lambda first, second:cmp(first[0], second[0]))
-    print "accAbove="+str(accumulatedAbove)
-    print "suppAndFill="+str(supportAndFill)
-    print "suppAndFill[0::2]="+str(supportAndFill[0::2])
-    support = intervalSetIntersect(accumulatedAbove, supportAndFill[0::2])
-    fill = supportAndFill[1::2]
+
+    topInsides = wrapIntersections(x, layerdataAbove, flip)
+    midInsides = wrapIntersections(x, layerData, flip)
+    botInsides = wrapIntersections(x, layerdataBelow, flip)
+    fill = intervalSetIntersect(intervalSetIntersect(topInsides, midInsides), botInsides)
+    supportMaxArea = intervalSetDiff(maxInterval, accumulatedAbove)
+    topSupport = intervalSetDiff(maxInterval, topInsides)
+    midSupport = intervalSetDiff(maxInterval, midInsides)
+    botSupport = intervalSetDiff(maxInterval, botInsides)
+    support = intervalSetIntersect(intervalSetIntersect(intervalSetIntersect(topSupport, midSupport), botSupport), accumulatedAbove)
+    print("new fill = "+str(fill))
+    print("new support = " + str(support))
+    surfaceLines = intervalSetUnion(intervalSetDiff(topInsides, fill) + intervalSetDiff(midInsides, fill) + intervalSetDiff(botInsides, fill))
+    print ("new surface = " + str (surfaceLines))
+    #surfaceLines = intervalSetUnion(diff1 + diff2)
+    #print ("surfaceLines="+str(surfaceLines))
+    #print ("accAbove="+str(accumulatedAbove))
+    #supportAndFill = intervalSetDiff(maxInterval, surfaceLines)
+    #print ("unsorted="+str(supportAndFill))
+    #supportAndFill.sort(cmp=lambda first, second:cmp(first[0], second[0]))
+    #print "accAbove="+str(accumulatedAbove)
+    #print "suppAndFill="+str(supportAndFill)
+    #print "suppAndFill[0::2]="+str(supportAndFill[0::2])
+    #support = intervalSetIntersect(accumulatedAbove, supportAndFill[0::2])
+    #fill = intervalSetIntersect(accumulatedAbove, supportAndFill[1::2])
     return (surfaceLines, support, fill, intervalSetUnion(accumulatedAbove + surfaceLines))
 
 def processLayer(z, facetdata, accDataX, accDataY, zdelta, xdelta, ydelta, supportSpacing, fillSpacing, xmin, xmax, ymin, ymax, zmin, zmax):
@@ -164,25 +188,29 @@ def processLayer(z, facetdata, accDataX, accDataY, zdelta, xdelta, ydelta, suppo
     print ("processing layer z=" + str(z))
     print "layerData = " + str(layerData)
     print len(layerData)
+    xFirstPass = {}
     for x in range(int(math.floor(xmin/xdelta)),int(math.ceil(xmax/xdelta))+1):
         print "x=" + str(x)
         (surfaceLines, support, fill, newAccData) = getSupportAndFillIntervals(x*xdelta, xmin, xmax, layerData, layerDataBelow, layerDataAbove, accDataX[x], False)
         #TODO output gcode
         print "done x"
         accDataX[x] = newAccData
+        xFirstPass[x] = (surfaceLines, support, fill)
         print ("x=" + str(x) + " surfaceLines=" + str(surfaceLines) + " support = " + str(support) + " fill = " + str(fill))
-
     #for y in range(int(math.floor(ymin/ydelta)),int(math.ceil(ymax/ydelta))+1):
     #    y = y * ydelta
     #    (surfaceLines, support, fill, newAccData) = getSupportAndFillIntervals(y, layerData, layerDataBelow, layerDataAbove, accDataY[y], True)
     #    #TODO output gcode
     #    accDataY[y] = newAccData
-    return (accDataX, accDataY)
+    return (xFirstPass)
 
 def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
     (facetData, xmin, xmax, ymin, ymax, zmin, zmax) = generateSliceData(zdelta, filename)
     accIntervalsX = {}
     accIntervalsY = {}
+    xFirstPass = {}
+    xOutput = {}
+    gcode = GCode.GCodeWriter("foo.gcode", zdelta)
     for x in range(int(math.floor(xmin/xdelta)),int(math.ceil(xmax/xdelta))+1):
         accIntervalsX[x] = []
     for y in range(int(math.floor(ymin/ydelta)),int(math.ceil(ymax/ydelta))+1):
@@ -193,8 +221,40 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
     print(zrange)
     for z in zrange:
         print("z=" + str(z))
-        (accIntervalsX2, accIntervalsY2) = processLayer(z, facetData, accIntervalsX, accIntervalsY, zdelta, xdelta, ydelta, supportSpacing, fillSpacing, xmin, xmax, ymin, ymax, zmin, zmax)
-        accIntervalsX = accIntervalsX2
-        accIntervalsY = accIntervalsY2
+        xFirstPassTemp = processLayer(z, facetData, accIntervalsX, accIntervalsY, zdelta, xdelta, ydelta, supportSpacing, fillSpacing, xmin, xmax, ymin, ymax, zmin, zmax)
+        xFirstPass[z] = xFirstPassTemp
+    print "second pass"
+    for z in zrange:
+        print ("z="+str(z))
+        for x in range(int(math.floor(xmin/xdelta)),int(math.ceil(xmax/xdelta))+1):
+            print ("x="+str(x))
+            above = ([], [], [])
+            if (z*zdelta + zdelta <=zmax):
+                above = xFirstPass[z+1][x]
+            cur = xFirstPass[z][x]
+            below = ([], [], [])
+            if (z*zdelta -zdelta >= zmin):
+                below = xFirstPass[z-1][x]
+            newSurface = intervalSetUnion(above[0] + cur[0] + below[0])
+            newFill = intervalSetDiff(cur[2], newSurface)
+            newSupport = intervalSetDiff(cur[1], newSurface)
+            xOutput = (newSurface, newSupport, newFill)
+            print ("surface = " + str(newSurface))
+            print ("fill = " + str(newFill))
+            print ("support = " + str(newSupport))
+            if (x % fillSpacing == 0):
+                for fill in newFill:
+                    gcode.writeLayer((x*xdelta,fill[0]), (x*xdelta,fill[1]))
+            if (x % supportSpacing == 0):
+                for support in newSupport:
+                    gcode.writeLayer((x*xdelta,support[0]), (x*zdelta,support[1]))
+            for surf in newSurface:
+                gcode.writeLayer((x*xdelta,surf[0]), (x*xdelta,surf[1]))
+        gcode.incrementLayer()
 
-processAll(0.1, 0.1, 0.1, "testData/testcube_20mm.stl", 2, 2)
+    gcode.done()
+
+
+
+
+processAll(0.1, 0.1, 0.1, "testData/testcube_20mm.stl", 4, 2)
