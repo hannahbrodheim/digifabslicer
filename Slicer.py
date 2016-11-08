@@ -270,7 +270,7 @@ def percentConversion(fraction, spacing):
     return math.floor(1/(fraction*spacing/filamentWidth))
 
 def runGcodeGeneration(filename, fillPercent, supportPercent):
-    spacing = 0.2
+    spacing = 0.23
     processAll(spacing, spacing, spacing, filename, 
                 percentConversion(fillPercent, spacing), percentConversion(supportPercent, spacing))
 

@@ -4,7 +4,13 @@ Usage of slicer
 
 The gcode will be output to a file specified in the method processAll.  It will be called "<filename>.gcode".
 
-We tested our visualizations in http://jherrm.com/gcode-viewer/ and http://gcode.ws/.  There were some inconsistencies between the two views.  When inconsistencies occurred we relied on looking at the lines being generated to determine whether our solution appeared correct and manually comparing the lines that appear on screen with the lines we plot in the gcode.
+We tested our visualizations in http://jherrm.com/gcode-viewer/ and http://gcode.ws/.  
+There were some inconsistencies between the two views.  When inconsistencies occurred,
+we relied on looking at the lines being generated to determine whether our solution appeared correct
+and manually comparing the lines that appear on screen with the lines we plot in the gcode.
+
+Our slicer outputs fill in both the x and y directions inside the object, and outputs supports in
+the x direction outside the object when parts of the object require support.
 
 Parser.py reads in the stl file and finds intersection points with a plane
 Slicer.py calls the parser and gcode.py and does the writing and slicing
