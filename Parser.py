@@ -16,7 +16,8 @@ class Facet:
 
     def isFlat(self, zDiff):
         # trictly less than, not less than or equal to
-        if ((abs(self.v1.z - self.v2.z) < zDiff) and (abs(self.v3.z - self.v2.z) < zDiff) and (abs(self.v1.z - self.v3.z) < zDiff)):
+        if ((abs(self.v1.z - self.v2.z) < zDiff) and (abs(self.v3.z - self.v2.z) < zDiff) 
+                and (abs(self.v1.z - self.v3.z) < zDiff)):
             return True
         return False
 
@@ -24,10 +25,10 @@ class Facet:
         return Point(p0.x - p1.x, p0.y - p1.y, p0.z - p1.z)
 
     def calculate(self, planeNormal, planePoint, p0, p1):
-        return (self.dotProduct(planeNormal, (self.minus(planePoint, p0)))/(self.dotProduct(planeNormal, (self.minus(p1, p0)))))
+        return (self.dotProduct(planeNormal, (self.minus(planePoint, p0)))/
+                    (self.dotProduct(planeNormal, (self.minus(p1, p0)))))
 
     def dotProduct(self, first, second):
-       # print (str(first) + " " + str(second))
         return (first.x * second.x) + (first.y * second.y) + (first.z * second.z)
 
     def getIntersectionLine(self, z):
@@ -38,13 +39,15 @@ class Facet:
         flag = False
         flag2 = False
         flag3 = False
-        if ((max(self.v1.z, self.v2.z, self.v3.z) < z) or (min(self.v1.z, self.v2.z, self.v3.z) > z)):
+        if ((max(self.v1.z, self.v2.z, self.v3.z) < z) 
+            or (min(self.v1.z, self.v2.z, self.v3.z) > z)):
             return None
 
         if (((self.v1.z <= z) and (self.v2.z >= z)) or ((self.v1.z >= z) and (self.v2.z <= z))):
             try:
                 result = (self.calculate(planeNormal, planePoint, self.v2, self.v1))
-                points.append (((((self.v1.x - self.v2.x) * result) + self.v2.x), ((self.v1.y - self.v2.y) * result + self.v2.y)))
+                points.append (((((self.v1.x - self.v2.x) * result) + self.v2.x),
+                                    ((self.v1.y - self.v2.y) * result + self.v2.y)))
             except ZeroDivisionError:
                 if (self.v1.z==z):
                     flag = True
@@ -53,7 +56,8 @@ class Facet:
         if (((self.v3.z <= z) and (self.v2.z >= z)) or ((self.v3.z >= z) and (self.v2.z <= z))):
             try:
                 result = (self.calculate(planeNormal, planePoint, self.v2, self.v3))
-                points.append (((((self.v3.x - self.v2.x) * result) + self.v2.x), ((self.v3.y - self.v2.y) * result + self.v2.y)))
+                points.append (((((self.v3.x - self.v2.x) * result) + self.v2.x),
+                                    ((self.v3.y - self.v2.y) * result + self.v2.y)))
             except ZeroDivisionError:
                 if (self.v2.z==z):
                     flag2 = True
@@ -62,7 +66,8 @@ class Facet:
         if (((self.v1.z <= z) and (self.v3.z >= z)) or ((self.v1.z >= z) and (self.v3.z <= z))):
             try:
                 result = (self.calculate(planeNormal, planePoint, self.v3, self.v1))
-                points.append (((((self.v1.x - self.v3.x) * result) +self.v3.x), ((self.v1.y - self.v3.y) * result + self.v3.y)))
+                points.append (((((self.v1.x - self.v3.x) * result) +self.v3.x),
+                                     ((self.v1.y - self.v3.y) * result + self.v3.y)))
             except ZeroDivisionError:
                 if (self.v3.z==z):
                     flag3 = True
@@ -74,17 +79,11 @@ class Facet:
             return None
         if (points[0]==points[1]):
             return None
-        if (len(points) == 3):
-            print points
-            print "ewww"
-        if flag or flag2 or flag3:
-            print flag
-            print flag2
-            print flag3
         return points
 
     def __str__ (self):
-        return "normal: "+str(self.normal) +" v1: "+str(self.v1)+" v2: "+str(self.v2)+" v3: "+str(self.v3)
+        return ("normal: " + str(self.normal) + " v1: " +
+                    str(self.v1) + " v2: " + str(self.v2) + " v3: " + str(self.v3))
 
 def parse(filename, zDiff):
     f = open(filename, "r")
@@ -110,7 +109,10 @@ def parse(filename, zDiff):
         miny = min(miny, float(v1[1]), float(v2[1]), float(v3[1]))
         minx = min(minx, float(v1[0]), float(v2[0]), float(v3[0]))
 
-        facets.append(Facet(Point(float(normal[0]), float(normal[1]), float(normal[2])), Point(float(v1[0]), float(v1[1]), float(v1[2])), Point(float(v2[0]), float(v2[1]), float(v2[2])), Point(float(v3[0]), float(v3[1]), float(v3[2]))))
+        facets.append(Facet(Point(float(normal[0]), float(normal[1]), float(normal[2])), 
+                            Point(float(v1[0]), float(v1[1]), float(v1[2])),
+                            Point(float(v2[0]), float(v2[1]), float(v2[2])), 
+                            Point(float(v3[0]), float(v3[1]), float(v3[2]))))
         f.readline() # endloop
         f.readline() # end facet
         next = f.readline() # facet

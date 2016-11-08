@@ -1,8 +1,10 @@
 Usage of slicer
 
-At the bottom of Slicer.py enter the name of the file as the variable "testfile".  The gcode will be output to a file specified in the method processAll.  It will be called "foo"+testfile+".gcode".
+"python Slicer.py <filename>""
 
-We tested our visualizations in http://jherrm.com/gcode-viewer/ and http://gcode.ws/.  There were some inconsistencies between the two views.  When inconsistencies occurred we relied on looking at the lines being generated to determine whether our solution appeared correct.
+The gcode will be output to a file specified in the method processAll.  It will be called "<filename>.gcode".
+
+We tested our visualizations in http://jherrm.com/gcode-viewer/ and http://gcode.ws/.  There were some inconsistencies between the two views.  When inconsistencies occurred we relied on looking at the lines being generated to determine whether our solution appeared correct and manually comparing the lines that appear on screen with the lines we plot in the gcode.
 
 Parser.py reads in the stl file and finds intersection points with a plane
 Slicer.py calls the parser and gcode.py and does the writing and slicing
