@@ -8,6 +8,7 @@ We tested our visualizations in http://jherrm.com/gcode-viewer/ and http://gcode
 There were some inconsistencies between the two views.  When inconsistencies occurred,
 we relied on looking at the lines being generated to determine whether our solution appeared correct
 and manually comparing the lines that appear on screen with the lines we plot in the gcode.
+(In particular, http://jherrm.com/gcode-viewer/ seems to work more reliably that gcode.ws)
 
 Our slicer outputs fill in both the x and y directions inside the object, and outputs supports in
 the x direction outside the object when parts of the object require support.
