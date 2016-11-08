@@ -194,36 +194,30 @@ def dist(x,y):
 
 def logPerimeter(layerdata, gcode):
     copy = list(layerdata)
+    if copy == []:
+        return
     start = layerdata[0][0]
     while not (len(copy) == 0):
         foundSomething = False
         newcopy = list(copy)
         for thing in copy:
             if (dist(thing[0], start)<0.0001):
-                print(dist(thing[0], start))
-                gcode.writeLayer(thing[0], thing[1])
+                gcode.writeDefinite(thing[0], thing[1])
                 newcopy.remove(thing)
-                print "first"
-                print start
-                print thing
+     
                 start = thing[1]
-                print "newstart= "+str(start)
                 foundSomething = True
                 break
             if (dist(thing[1], start)<0.0001):
-                gcode.writeLayer(thing[1], thing[0])
+                gcode.writeDefinite(thing[1], thing[0])
                 newcopy.remove(thing)
-                print "second"
-                print start
-                print thing
                 start = thing[0]
-                print "newstart = " + str(start)
                 foundSomething = True
                 break
         copy = newcopy
         if not foundSomething:
-            print "foo"
-            print start
+            #print "foo"
+            #print start
             start = copy[0][0]
 
 def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
@@ -268,7 +262,7 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
             xOutput = (newSurface, newSupport, newFill)
             if ((y % fillSpacing) == 0):
                 for fill in newFill:
-                    gcode.writeLayer((fill[0], y*ydelta), (fill[1], y*ydelta))
+                    gcode.writeDefinite((fill[0], y*ydelta), (fill[1], y*ydelta))
             #if (z % 2 == 0):
             #    for surf in newSurface:
             #        gcode.writeLayer((surf[0], y*ydelta), (surf[1], y*ydelta))
@@ -278,7 +272,7 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
             #        gcode.writeLayer((fill[0], y*ydelta), (fill[1], y*ydelta))
             if (z % 2 == 0):
                 for surf in newSurface:
-                    gcode.writeLayer((surf[0], y*ydelta), (surf[1], y*ydelta))
+                    gcode.writeDefinite((surf[0], y*ydelta), (surf[1], y*ydelta))
 
         for x in range(int(math.floor(xmin/xdelta)),int(math.ceil(xmax/xdelta))+1):
             above = ([], [], [])
@@ -292,16 +286,17 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
             newFill = intervalSetDiff(cur[2], newSurface)
             newSupport = intervalSetDiff(cur[1], newSurface)
             xOutput = (newSurface, newSupport, newFill)
+            print(str(newSurface) +" " + str(newFill))
             if ((x % fillSpacing) == 0):
                 for fill in newFill:
-                    gcode.writeLayer((x*xdelta,fill[0]), (x*xdelta,fill[1]))
+                    gcode.writeDefinite((x*xdelta,fill[0]), (x*xdelta,fill[1]))
                     #print(str(fill))
             if ((x % supportSpacing) == 0):
                for support in newSupport:
-                   gcode.writeLayer((x*xdelta,support[0]), (x*zdelta,support[1]))
+                   gcode.writeDefinite((x*xdelta,support[0]), (x*zdelta,support[1]))
             if ((z % 2) == 1):
                 for surf in newSurface:
-                    gcode.writeLayer((x*xdelta,surf[0]), (x*xdelta,surf[1]))
+                    gcode.writeDefinite((x*xdelta,surf[0]), (x*xdelta,surf[1]))
         logPerimeter(facetData[z], gcode)
         #for line in facetData[z]:
         #    gcode.writeLayer(line[0], line[1])
@@ -313,8 +308,8 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
 
 
 
-testfile = "Cylinder"
+#testfile = "Cylinder"
 #testfile = "sphere"
-#testfile = "testcube_20mm"
+testfile = "testcube_20mm"
 #testfile = "Lab3-M"
-processAll(1, 1, 1, "testData/"+testfile+".stl", 1000, 1000)
+processAll(0.1, 0.1, 0.1, "testData/"+testfile+".stl", 3, 3)
