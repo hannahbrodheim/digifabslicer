@@ -7,7 +7,7 @@
 import Parser
 import math
 import GCode
-
+import sys
 
 def generateSliceData(zdelta, filename):
     (facets, xmin, xmax, ymin, ymax, zmin, zmax) = Parser.parse(filename, zdelta)
@@ -22,35 +22,8 @@ def generateSliceData(zdelta, filename):
             intersection = facet.getIntersectionLine(z*zdelta)
             if intersection is not None:
                 lines.append(intersection)
-        facetdata[z] = lines #mergeColinearLines(lines)
+        facetdata[z] = lines 
     return (facetdata, xmin, xmax, ymin, ymax, zmin, zmax)
-
-def getAngle(line):
-    (x,y) = line[0]
-    (x1,y1) = line[1]
-    return math.atan2(y1-y, x1-x) % math.pi
-
-def mergeColinearLines(lines):
-    if lines == []:
-        return []
-    line = lines[0]
-    otherlines = lines[1:]
-    theta = getAngle(line)
-    for oline in otherlines:
-        if (getAngle(oline) == theta):
-            if line[0]==oline[0]:
-                otherlines.remove(oline)
-                return mergeColinearLines([(line[1], oline[1])] + otherlines)
-            if line[0]==oline[1]:
-                otherlines.remove(oline)
-                return mergeColinearLines([(line[1], oline[0])] + otherlines)
-            if line[1]==oline[0]:
-                otherlines.remove(oline)
-                return mergeColinearLines([(line[0], oline[1])] + otherlines)
-            if line[1]==oline[1]:
-                otherlines.remove(oline)
-                return mergeColinearLines([(line[0], oline[0])] + otherlines)
-    return [line] + mergeColinearLines(otherlines)
 
 def intersections(coord, layerdata, flip):
     points = []
@@ -73,11 +46,6 @@ def intersections(coord, layerdata, flip):
         slope = (y2-y1)/(x2-x1)
         if (x1<= coord and coord <= x2) or (x2 <= coord and coord <= x1):
             points.append(slope*(coord-x1) + y1)
-        #    points.append((((coord-x1)*y1) + ((x2-coord)*y2))/(x2-x1))
-        #elif (x2<=coord and coord<=x1):
-        #    if x2==x1:
-        #        continue
-        #    points.append((((coord-x2)*y2) + ((x1-coord)*y1))/(x1-x2))
     return list(set(points))
 
 def makePairs(points):
@@ -96,7 +64,10 @@ def intervalUnion(interval1, interval2):
     return (min(interval1[0], interval2[0]), max(interval1[1], interval2[1]))
 
 def intervalHasOverlap(interval1, interval2):
-    return (interval1[0] >= interval2[0] and interval1[0] <= interval2[1]) or (interval1[1] >= interval2[0] and interval1[1] <= interval2[1]) or (interval2[0] >=interval1[0] and interval2[1] <= interval1[1]) or (interval1[0] >= interval2[0] and interval1[1] <= interval2[1])
+    return ((interval1[0] >= interval2[0] and interval1[0] <= interval2[1]) 
+        or (interval1[1] >= interval2[0] and interval1[1] <= interval2[1])
+        or (interval2[0] >= interval1[0] and interval2[1] <= interval1[1])
+        or (interval1[0] >= interval2[0] and interval1[1] <= interval2[1]))
 
 def intervalSetUnion(intervals):
     queue = intervals
@@ -153,7 +124,8 @@ def wrapIntersections(x, layerdata, flip):
     results.sort()
     return makePairs (results)
 
-def getSupportAndFillIntervals(x, xmin, xmax, layerData, layerdataBelow, layerdataAbove, accumulatedAbove, flip):
+def getSupportAndFillIntervals(x, xmin, xmax, layerData, layerdataBelow, layerdataAbove, 
+                                accumulatedAbove, flip):
     maxInterval = [(xmin-1, xmax+1)]
     topInsides = wrapIntersections(x, layerdataAbove, flip)
     midInsides = wrapIntersections(x, layerData, flip)
@@ -163,13 +135,20 @@ def getSupportAndFillIntervals(x, xmin, xmax, layerData, layerdataBelow, layerda
     topSupport = intervalSetDiff(maxInterval, topInsides)
     midSupport = intervalSetDiff(maxInterval, midInsides)
     botSupport = intervalSetDiff(maxInterval, botInsides)
-    support = intervalSetIntersect(intervalSetIntersect(intervalSetIntersect(topSupport, midSupport), botSupport), accumulatedAbove)
-    surfaceLines = intervalSetUnion(intervalSetDiff(topInsides, fill) + intervalSetDiff(midInsides, fill) + intervalSetDiff(botInsides, fill))
+    support = intervalSetIntersect(
+                    intervalSetIntersect(
+                        intervalSetIntersect(topSupport, midSupport), 
+                        botSupport), 
+                    accumulatedAbove)
+    surfaceLines = intervalSetUnion(intervalSetDiff(topInsides, fill) + 
+                                    intervalSetDiff(midInsides, fill) + 
+                                    intervalSetDiff(botInsides, fill))
 
 
     return (surfaceLines, support, fill, intervalSetUnion(accumulatedAbove + surfaceLines))
 
-def processLayer(z, facetdata, accDataX, accDataY, zdelta, xdelta, ydelta, supportSpacing, fillSpacing, xmin, xmax, ymin, ymax, zmin, zmax):
+def processLayer(z, facetdata, accDataX, accDataY, zdelta, xdelta, ydelta, supportSpacing, 
+                    fillSpacing, xmin, xmax, ymin, ymax, zmin, zmax):
     layerData = facetdata[z]
     layerDataAbove = None
     layerDataBelow = None
@@ -180,11 +159,13 @@ def processLayer(z, facetdata, accDataX, accDataY, zdelta, xdelta, ydelta, suppo
     xFirstPass = {}
     yFirstPass = {}
     for x in range(int(math.floor(xmin/xdelta)),int(math.ceil(xmax/xdelta))+1):
-        (surfaceLines, support, fill, newAccData) = getSupportAndFillIntervals(x*xdelta, xmin, xmax, layerData, layerDataBelow, layerDataAbove, accDataX[x], False)
+        (surfaceLines, support, fill, newAccData) = getSupportAndFillIntervals(
+            x*xdelta, xmin, xmax, layerData, layerDataBelow, layerDataAbove, accDataX[x], False)
         accDataX[x] = newAccData
         xFirstPass[x] = (surfaceLines, support, fill)
     for y in range(int(math.floor(ymin/ydelta)),int(math.ceil(ymax/ydelta))+1):
-        (surfaceLines, support, fill, newAccData) = getSupportAndFillIntervals(y*ydelta, ymin, ymax, layerData, layerDataBelow, layerDataAbove, accDataY[y], True)
+        (surfaceLines, support, fill, newAccData) = getSupportAndFillIntervals(
+            y*ydelta, ymin, ymax, layerData, layerDataBelow, layerDataAbove, accDataY[y], True)
         accDataY[y] = newAccData
         yFirstPass[y] = (surfaceLines, support, fill)
     return (xFirstPass, yFirstPass)
@@ -203,8 +184,7 @@ def logPerimeter(layerdata, gcode):
         for thing in copy:
             if (dist(thing[0], start)<0.0001):
                 gcode.writeDefinite(thing[0], thing[1])
-                newcopy.remove(thing)
-     
+                newcopy.remove(thing)  
                 start = thing[1]
                 foundSomething = True
                 break
@@ -216,8 +196,6 @@ def logPerimeter(layerdata, gcode):
                 break
         copy = newcopy
         if not foundSomething:
-            #print "foo"
-            #print start
             start = copy[0][0]
 
 def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
@@ -227,26 +205,20 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
     xFirstPass = {}
     yFirstPass = {}
     xOutput = {}
-    gcode = GCode.GCodeWriter("foo"+testfile+".gcode", zdelta)
+    gcode = GCode.GCodeWriter(filename+".gcode", zdelta)
     for x in range(int(math.floor(xmin/xdelta)),int(math.ceil(xmax/xdelta))+1):
         accIntervalsX[x] = []
     for y in range(int(math.floor(ymin/ydelta)),int(math.ceil(ymax/ydelta))+1):
         accIntervalsY[y] = []
-    print (xmin, xmax, ymin, ymax, zmin, zmax)
     zrange = (range(int((math.floor(zmin/zdelta))), int(math.ceil(zmax/zdelta))+1))
     zrange.reverse()
     for z in zrange:
-        (xFirstPassTemp, yFirstPassTemp) = processLayer(z, facetData, accIntervalsX, accIntervalsY, zdelta, xdelta, ydelta, supportSpacing, fillSpacing, xmin, xmax, ymin, ymax, zmin, zmax)
+        (xFirstPassTemp, yFirstPassTemp) = processLayer(z, facetData, accIntervalsX, accIntervalsY, 
+            zdelta, xdelta, ydelta, supportSpacing, fillSpacing, xmin, xmax, ymin, ymax, zmin, zmax)
         xFirstPass[z] = xFirstPassTemp
         yFirstPass[z] = yFirstPassTemp
     zrange.reverse()
-    #for line in facetData[0]:
-    #    gcode.writeLayer(line[0], line[1])
-    #    print line
     for z in zrange:
-        #for line in facetData[z]:
-        #    gcode.writeLayer(line[0], line[1])
-        print ("z="+str(z))
         for y in range(int(math.floor(ymin/ydelta)),int(math.ceil(ymax/ydelta))+1):
             above = ([], [], [])
             if (z*zdelta + zdelta <=zmax):
@@ -255,24 +227,15 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
             below = ([], [], [])
             if (z*zdelta -zdelta >= zmin):
                 below = yFirstPass[z-1][y]
-           # print (str(above[0])+" "+str(cur[0]) + " " +str(below[0]))
             newSurface = intervalSetUnion(above[0] + cur[0] + below[0])
             newFill = intervalSetDiff(cur[2], newSurface)
             newSupport = intervalSetDiff(cur[1], newSurface)
-            xOutput = (newSurface, newSupport, newFill)
             if ((y % fillSpacing) == 0):
                 for fill in newFill:
-                    gcode.writeDefinite((fill[0], y*ydelta), (fill[1], y*ydelta))
-            #if (z % 2 == 0):
-            #    for surf in newSurface:
-            #        gcode.writeLayer((surf[0], y*ydelta), (surf[1], y*ydelta))
-            #if ((y % fillSpacing) == 0):
-                #pass
-            #    for fill in newFill:
-            #        gcode.writeLayer((fill[0], y*ydelta), (fill[1], y*ydelta))
-            #if (z % 2 == 0):
-            #    for surf in newSurface:
-            #        gcode.writeDefinite((surf[0], y*ydelta), (surf[1], y*ydelta))
+                    gcode.writeMaybe((fill[0], y*ydelta), (fill[1], y*ydelta))
+            if (z % 2 ==0):
+                for surf in newSurface:
+                    gcode.writeMaybe((surf[0], y*ydelta), (surf[1], y*ydelta)) 
 
         for x in range(int(math.floor(xmin/xdelta)),int(math.ceil(xmax/xdelta))+1):
             above = ([], [], [])
@@ -285,31 +248,37 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
             newSurface = intervalSetUnion(above[0] + cur[0] + below[0])
             newFill = intervalSetDiff(cur[2], newSurface)
             newSupport = intervalSetDiff(cur[1], newSurface)
-            xOutput = (newSurface, newSupport, newFill)
-            print(str(newSurface) +" " + str(newFill))
             if ((x % fillSpacing) == 0):
                 for fill in newFill:
                     gcode.writeMaybe((x*xdelta,fill[0]), (x*xdelta,fill[1]))
-                    #print(str(fill))
             if ((x % supportSpacing) == 0):
                for support in newSupport:
                    gcode.writeMaybe((x*xdelta,support[0]), (x*zdelta,support[1]))
-            #if ((z % 2) == 1):
-            #    for surf in newSurface:
-            #        gcode.writeDefinite((x*xdelta,surf[0]), (x*xdelta,surf[1]))
+            if (z%2==1):
+                for surf in newSurface:
+                    gcode.writeMaybe((x*xdelta, surf[0]), (x*xdelta, surf[1])) 
         logPerimeter(facetData[z], gcode)
-        #for line in facetData[z]:
-        #    gcode.writeLayer(line[0], line[1])
-        #    print(line)
         gcode.incrementLayer()
-
-
     gcode.done()
 
+def percentConversion(fraction, spacing):
+    filamentWidth = 0.15
 
+    return math.floor(1/(fraction*spacing/filamentWidth))
 
-#testfile = "Cylinder"
-testfile = "sphere"
-#testfile = "testcube_20mm"
-#testfile = "Lab3-M"
-processAll(0.2, 0.2, 0.2, "testData/"+testfile+".stl", 10, 10)
+def runGcodeGeneration(filename, fillPercent, supportPercent):
+    spacing = 0.2
+    processAll(spacing, spacing, spacing, filename, 
+                percentConversion(fillPercent, spacing), percentConversion(supportPercent, spacing))
+
+def __main__():
+    fillPercent = .05
+    supportPercent = .20
+    if (not len(sys.argv)==2):
+        print "usage:\"python Slicer.py <filename>\""
+        return
+    runGcodeGeneration(sys.argv[1], fillPercent, supportPercent)
+    print ("output to " + sys.argv[1] + ".gcode")
+
+if __name__ == "__main__":
+    __main__()

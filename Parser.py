@@ -68,18 +68,10 @@ class Facet:
                     flag3 = True
                     extraPoints.append((self.v1.x, self.v1.y))
                     extraPoints.append((self.v3.x, self.v3.y))
-        #if (len(points) > 2):
-        #    return None
-        #if (points[0] == points[1]):
-        #    return None
         if (len(extraPoints) == 2):
             return extraPoints
         if (len(extraPoints) >2):
             return None
-        #if (len(points) == 4 or len(points)==3):
-        #    points = list(set(points))
-        #if (len(points)==6):
-        #    return None
         if (points[0]==points[1]):
             return None
         if (len(points) == 3):
