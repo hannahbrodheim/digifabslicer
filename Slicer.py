@@ -9,6 +9,7 @@ import math
 import GCode
 import sys
 
+# turn our parsed facets into a dictionary of lines grouped by the z level as a key
 def generateSliceData(zdelta, filename):
     (facets, xmin, xmax, ymin, ymax, zmin, zmax) = Parser.parse(filename, zdelta)
 
@@ -173,6 +174,7 @@ def processLayer(z, facetdata, accDataX, accDataY, zdelta, xdelta, ydelta, suppo
 def dist(x,y):
     return ((x[0]-y[0])**2 + (x[1]-y[1])**2)
 
+# avoid doublewriting over the perimeter
 def logPerimeter(layerdata, gcode):
     copy = list(layerdata)
     if copy == []:
@@ -217,6 +219,7 @@ def processAll(xdelta, ydelta, zdelta, filename, supportSpacing, fillSpacing):
             zdelta, xdelta, ydelta, supportSpacing, fillSpacing, xmin, xmax, ymin, ymax, zmin, zmax)
         xFirstPass[z] = xFirstPassTemp
         yFirstPass[z] = yFirstPassTemp
+    # we need to print bottom up
     zrange.reverse()
     for z in zrange:
         for y in range(int(math.floor(ymin/ydelta)),int(math.ceil(ymax/ydelta))+1):

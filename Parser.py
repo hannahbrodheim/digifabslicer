@@ -1,3 +1,4 @@
+# class for an individual point
 class Point:
     def __init__(self, x, y, z):
         self.x = x
@@ -7,6 +8,7 @@ class Point:
     def __str__ (self):
         return "x: "+str(self.x)+" y: "+str(self.y)+" z: "+str(self.z)+"\n"
 
+# class for an individual Facet composed of points
 class Facet:
     def __init__(self, normal, v1, v2, v3):
         self.normal = normal
@@ -14,6 +16,7 @@ class Facet:
         self.v2 = v2
         self.v3 = v3
 
+    # does this facet lie completely within the plane
     def isFlat(self, zDiff):
         # trictly less than, not less than or equal to
         if ((abs(self.v1.z - self.v2.z) < zDiff) and (abs(self.v3.z - self.v2.z) < zDiff) 
@@ -21,16 +24,20 @@ class Facet:
             return True
         return False
 
+    # subtraction for points
     def minus(self, p0, p1):
         return Point(p0.x - p1.x, p0.y - p1.y, p0.z - p1.z)
 
+    # calculate the intersection of a line and a plane
     def calculate(self, planeNormal, planePoint, p0, p1):
         return (self.dotProduct(planeNormal, (self.minus(planePoint, p0)))/
                     (self.dotProduct(planeNormal, (self.minus(p1, p0)))))
 
+    # dot product function for two points
     def dotProduct(self, first, second):
         return (first.x * second.x) + (first.y * second.y) + (first.z * second.z)
 
+    # find the intersection lines of a facet and a plane
     def getIntersectionLine(self, z):
         planeNormal = Point(0,0,-1)
         planePoint = Point(0,0,z)
@@ -39,10 +46,11 @@ class Facet:
         flag = False
         flag2 = False
         flag3 = False
+        # is there no intersection between the facet and the plane
         if ((max(self.v1.z, self.v2.z, self.v3.z) < z) 
             or (min(self.v1.z, self.v2.z, self.v3.z) > z)):
             return None
-
+        # check if each edge of the facet has an intersection point in the plane
         if (((self.v1.z <= z) and (self.v2.z >= z)) or ((self.v1.z >= z) and (self.v2.z <= z))):
             try:
                 result = (self.calculate(planeNormal, planePoint, self.v2, self.v1))
@@ -73,6 +81,7 @@ class Facet:
                     flag3 = True
                     extraPoints.append((self.v1.x, self.v1.y))
                     extraPoints.append((self.v3.x, self.v3.y))
+        # we only want the case where there is a perfect intersection at two points
         if (len(extraPoints) == 2):
             return extraPoints
         if (len(extraPoints) >2):
@@ -95,6 +104,7 @@ def parse(filename, zDiff):
     name = f.readline()
     next = f.readline()
     facets = []
+    # slightly janky way to find the mins and maxes but within reason it should work
     maxz = -99
     minz = 99
     maxy = -99
@@ -117,7 +127,7 @@ def parse(filename, zDiff):
         minz = min(minz, float(v1[2]), float(v2[2]), float(v3[2]))
         miny = min(miny, float(v1[1]), float(v2[1]), float(v3[1]))
         minx = min(minx, float(v1[0]), float(v2[0]), float(v3[0]))
-
+        # add each facet to a list of facets
         facets.append(Facet(Point(float(normal[0]), float(normal[1]), float(normal[2])), 
                             Point(float(v1[0]), float(v1[1]), float(v1[2])),
                             Point(float(v2[0]), float(v2[1]), float(v2[2])), 
