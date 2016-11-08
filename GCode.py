@@ -16,7 +16,7 @@ G10 - does what M207 says
 import math
 
 class GCodeWriter:
-    starterCode = "M109 S205.000000\nG28 X0 Y0 Z0 \nG92 E0 \nG29\nM207 S0.5\nM101\n"
+    starterCode = "M109 S205.000000\nG28 X0 Y0 Z0 \nG92 E0 \nG29\nM207 S0.5\n"
     endCode = "M104 S0\nM140 S0\nG91\nG1 E-1 F300\nG28 X0 Y0\nM84\nG90\n"
     def __init__(self, filename, zDelta):
         self.f = open(filename, "w")

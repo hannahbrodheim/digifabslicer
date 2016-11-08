@@ -85,6 +85,11 @@ class Facet:
         return ("normal: " + str(self.normal) + " v1: " +
                     str(self.v1) + " v2: " + str(self.v2) + " v3: " + str(self.v3))
 
+def removeEmptyStrings(line):
+    if (line[0]==''):
+        return removeEmptyStrings(line[1:])
+    return line
+
 def parse(filename, zDiff):
     f = open(filename, "r")
     name = f.readline()
@@ -102,6 +107,10 @@ def parse(filename, zDiff):
         v1 = f.readline()[13:-1].split(" ")
         v2 = f.readline()[13:-1].split(" ")
         v3 = f.readline()[13:-1].split(" ")
+        normal = removeEmptyStrings(normal)
+        v1 = removeEmptyStrings(v1)
+        v2 = removeEmptyStrings(v2)
+        v3 = removeEmptyStrings(v3)
         maxz = max(maxz, float(v1[2]), float(v2[2]), float(v3[2]))
         maxy = max(maxy, float(v1[1]), float(v2[1]), float(v3[1]))
         maxx = max(maxx, float(v1[0]), float(v2[0]), float(v3[0]))
