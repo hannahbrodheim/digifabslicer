@@ -24,6 +24,7 @@ class GCodeWriter:
         self.x = 0
         self.y = 0
         self.z = 0
+        self.e = 0
         self.zDelta = zDelta
         self.f.write(self.starterCode)
 
@@ -35,12 +36,14 @@ class GCodeWriter:
     # extrusion quantity is just the distance times 5
     # this was chosen essentially at random
     def calculateE(self, x, y, x1, y1):
-        return str(5*self.distance(x,y,x1, y1))
+        dist = 2*self.distance(x, y, x1, y1)
+        self.e = self.e + dist
+        return str(self.e)
 
     # write a line of gcode precisely between two coordinates
     def writeDefinite(self, (x1, y1), (x2, y2)):
         a = ""#G10\n"
-        a += "G1 X"+str(x1)+" Y"+str(y1)+" Z"+str(self.z)+" E0\n"
+        a += "G1 X"+str(x1)+" Y"+str(y1)+" Z"+str(self.z)+" E"+str(self.e)+"\n"
         a += "M101\n"
         a += "G1 X"+str(x2)+" Y"+str(y2)+" Z"+str(self.z)+" E"+self.calculateE(x1, y1, x2, y2)+"\n"
         a += "M103\n"
@@ -68,7 +71,7 @@ class GCodeWriter:
         elif (self.distance(self.x, self.y, x1, y1) < self.distance(self.x, self.y, x2, y2)):
             a = ""#G10\n"
             a += "M103\n"
-            a += "G1 X"+str(x1)+" Y"+str(y1)+" Z"+str(self.z)+" E0\n"
+            a += "G1 X"+str(x1)+" Y"+str(y1)+" Z"+str(self.z)+" E"+str(self.e)+"\n"
             a += "G1 X"+str(x2)+" Y"+str(y2)+" Z"+str(self.z)+" E"+self.calculateE(x1, y1, x2, y2)+"\n"
             a += "M101\n"
             self.x = x2
@@ -76,7 +79,7 @@ class GCodeWriter:
         else:
             a = ""#"G10\n"  
             a += "M103\n"
-            a += "G1 X"+str(x2)+" Y"+str(y2)+" Z"+str(self.z)+" E0\n"
+            a += "G1 X"+str(x2)+" Y"+str(y2)+" Z"+str(self.z)+" E"+str(self.e)+"\n"
             a += "G1 X"+str(x1)+" Y"+str(y1)+" Z"+str(self.z)+" E"+self.calculateE(x1, y1, x2, y2)  +"\n"
             a += "M101\n"
             self.x = x1
