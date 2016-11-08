@@ -31,7 +31,7 @@ class Facet:
         return (first.x * second.x) + (first.y * second.y) + (first.z * second.z)
 
     def getIntersectionLine(self, z):
-        planeNormal = Point(0,0,1)
+        planeNormal = Point(0,0,-1)
         planePoint = Point(0,0,z)
         points = []
         extraPoints = []
@@ -43,7 +43,7 @@ class Facet:
 
         if (((self.v1.z <= z) and (self.v2.z >= z)) or ((self.v1.z >= z) and (self.v2.z <= z))):
             try:
-                result = (self.calculate(planeNormal, planePoint, self.v1, self.v2))
+                result = (self.calculate(planeNormal, planePoint, self.v2, self.v1))
                 points.append (((((self.v1.x - self.v2.x) * result) + self.v2.x), ((self.v1.y - self.v2.y) * result + self.v2.y)))
             except ZeroDivisionError:
                 if (self.v1.z==z):
@@ -52,7 +52,7 @@ class Facet:
                     extraPoints.append((self.v2.x, self.v2.y))
         if (((self.v3.z <= z) and (self.v2.z >= z)) or ((self.v3.z >= z) and (self.v2.z <= z))):
             try:
-                result = (self.calculate(planeNormal, planePoint, self.v3, self.v2))
+                result = (self.calculate(planeNormal, planePoint, self.v2, self.v3))
                 points.append (((((self.v3.x - self.v2.x) * result) + self.v2.x), ((self.v3.y - self.v2.y) * result + self.v2.y)))
             except ZeroDivisionError:
                 if (self.v2.z==z):
@@ -61,7 +61,7 @@ class Facet:
                     extraPoints.append((self.v3.x, self.v3.y))
         if (((self.v1.z <= z) and (self.v3.z >= z)) or ((self.v1.z >= z) and (self.v3.z <= z))):
             try:
-                result = (self.calculate(planeNormal, planePoint, self.v1, self.v3))
+                result = (self.calculate(planeNormal, planePoint, self.v3, self.v1))
                 points.append (((((self.v1.x - self.v3.x) * result) +self.v3.x), ((self.v1.y - self.v3.y) * result + self.v3.y)))
             except ZeroDivisionError:
                 if (self.v3.z==z):

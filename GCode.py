@@ -46,6 +46,12 @@ class GCodeWriter:
         self.y = y2
         self.f.write(a)
 
+    def writeMaybe(self, (x, y), (x1, y1)):
+        if (self.distance(self.x, self.y, x1, y1) < self.distance(self.x, self.y, x,y)):
+            self.writeDefinite((x1,y1),(x,y))
+        else:
+            self.writeDefinite((x,y),(x1,y1))
+
     def writeLayer(self, (x1, y1), (x2, y2)):
         if(self.x == x1 and self.y == y1):
             a = "G1 X"+str(x2)+" Y"+str(y2)+" Z"+str(self.z)+" E"+self.calculateE(self.x, self.y,x2, y2)+"\n"
