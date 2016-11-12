@@ -16,7 +16,7 @@ G10 - does what M207 says
 import math
 
 class GCodeWriter:
-    starterCode = "M109 S205.000000\nG28 X0 Y0 Z0 \nG92 E0 \nG29\nM207 S0.5\n"
+    starterCode = "G21\nG90\nM82\nM109 S205.000000\nG28 X0 Y0 Z0 \nG92 E0 \nG29\nM207 S0.5\n"
 
     endCode = "M104 S0\nM140 S0\nG91\nG1 E-1 F300\nG28 X0 Y0\nM84\nG90\n"
     def __init__(self, filename, zDelta):
@@ -43,9 +43,11 @@ class GCodeWriter:
     # write a line of gcode precisely between two coordinates
     def writeDefinite(self, (x1, y1), (x2, y2)):
         a = ""#G10\n"
-        a += "G1 X"+str(x1)+" Y"+str(y1)+" Z"+str(self.z)+" E"+str(self.e)+"\n"
+        a += "G1 X"+str(x1)+" Y"+str(y1)+"\n"#+" Z"+str(self.z)+" E"+str(self.e)+"\n"
         a += "M101\n"
-        a += "G1 X"+str(x2)+" Y"+str(y2)+" Z"+str(self.z)+" E"+self.calculateE(x1, y1, x2, y2)+"\n"
+       # a += "G1 X"+str(x2)+" Y"+str(y2)+" Z"+str(self.z)+" E"+self.calculateE(x1, y1, x2, y2)+"\n"
+
+        a += "G1 X"+str(x2)+" Y"+str(y2)+" E"+self.calculateE(x1, y1, x2, y2)+"\n"
         a += "M103\n"
         self.x = x2
         self.y = y2
